@@ -1,5 +1,5 @@
 # You can get and run the entire script on a new machine by invoking the following command.
-# Invoke-Expression (Invoke-WebRequest https://raw.githubusercontent.com/0ut1awStar/InstallApps/InstallApps.ps1).content
+# irm https://raw.githubusercontent.com/0ut1awStar/InstallApps/refs/heads/main/InstallApps.ps1 | iex
 
 # When running WinGet without administrator privileges, some applications may require elevation to install. 
 # When the installer runs, Windows will prompt you to elevate. If you choose not to elevate, the application 
@@ -51,13 +51,15 @@ $WinGet = @(
     "OpenMPT.OpenMPT",
     "Plex.Plex",
     "Plex.Plexamp",
+    "UnifiedIntents.UnifiedRemote",
     "yt-dlp.yt-dlp",
     "Gyan.FFmpeg"
 )
 
 # manual install
+#Office (massgrave.dev)
 #filezilla
-#adobe
+#adobe p
 #solidworks
 #brother
 #powerchute
@@ -66,41 +68,81 @@ $WinGet = @(
 #questlink
 #syncthing
 
+
+function CheckAdminPrivileges {
+    if (!([Security.Principal.WindowsIdentity]::GetCurrent().Groups -contains 'S-1-5-32-544')) {
+        Write-Host "You are not running this script with administrator privileges. Please run as Administrator. Ending Script." -ForegroundColor Red
+        exit
+    } 
+}
+
+function Install-WinGet {
+    # Install WinGet, if not already installed
+    if (!(Get-AppPackage -name "Microsoft.DesktopAppInstaller")) {
+        Write-Host "Installing WinGet..." -ForegroundColor Yellow
+        Install-Script -Name winget-install
+    }
+}
+    
 function Install-WinGetApp {
     param (
         [string]$PackageID
     )
-    Write-Verbose -Message "Installing $Package"
+    Write-Host "Installing $PackageID" -ForegroundColor Yellow
     winget install --id "$PackageID" --silent --accept-source-agreements --accept-package-agreements --source winget
+}
+
+function Activate-Windows {
+        Write-Host "Activating Windows" -ForegroundColor Yellow
+    & ([ScriptBlock]::Create((irm https://get.activated.win))) /HWID
+}
+
+
+function Install-Office {
+    Write-Host "Installing Office" -ForegroundColor Yellow
+
+    # download url
+    $DownloadUrl = "https://c2rsetup.officeapps.live.com/c2r/download.aspx?ProductreleaseID=O365ProPlusRetail&platform=x64&language=en-us&version=O16GA"
+
+    # path where the file will be saved
+    $DestinationPath = "$env:TEMP\officesetup.exe"
+
+    # Download the file
+    Write-Host "Downloading Office setup from $DownloadUrl..." -ForegroundColor Yellow
+    Invoke-WebRequest -Uri $DownloadUrl -OutFile $DestinationPath
+
+    # Check if the file was downloaded successfully
+    if (Test-Path $DestinationPath) {
+        Write-Host "Download completed successfully. File saved to $DestinationPath." -ForegroundColor Green
+        
+        # Run the installer
+        Write-Host "Starting the Office setup installation..." -ForegroundColor Yellow
+        Start-Process -FilePath $DestinationPath -ArgumentList "/configure" -Wait -NoNewWindow
+        
+        Write-Host "Office setup installation completed." -ForegroundColor Green
+
+        Write-Host "Activating"
+        & ([ScriptBlock]::Create((irm https://get.activated.win))) /Ohook
+
+    } 
+    else {
+        Write-Host "Download failed. Please check the URL and try again." -ForegroundColor Red
+    }
 }
 
 
 ## RUN SCRIPT ##
 
-# Install WinGet, if not already installed
-if (!(Get-AppPackage -name "Microsoft.DesktopAppInstaller")) {
-    Write-Verbose -Message "Installing WinGet..."
-@'
-# Enable TLSv12
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+# Check if the script is running with administrator privileges
+CheckAdminPrivileges
 
-# Set latest WinGet Github URL
-$releases_url = "https://api.github.com/repos/microsoft/winget-cli/releases/latest"
+# Install WinGet
+Install-winGet
 
-# Install Nuget as Package Source Provider
-Register-PackageSource -Name Nuget -Location "http://www.nuget.org/api/v2" -ProviderName Nuget -Trusted
-
-# Get Win-Get release package
-$releases = Invoke-RestMethod -uri $releases_url
-$latestRelease = $releases.assets | Where { $_.browser_download_url.EndsWith('msixbundle') } | Select -First 1
-
-# Install Microsoft.DesktopAppInstaller Package
-Add-AppxPackage -Path $latestRelease.browser_download_url
-'@ > $Env:Temp\winget.ps1
-    Start-Process -FilePath "PowerShell" -ArgumentList "$Env:Temp\winget.ps1" -Verb RunAs -Wait
-    Remove-Item -Path $Env:Temp\winget.ps1 -Force
-}
-
+# Install WinGet Apps
 foreach ($app in $WinGet) {
     Install-WinGetApp -PackageID "$app"
 }
+
+# Install and Activate Office
+Install-Office
