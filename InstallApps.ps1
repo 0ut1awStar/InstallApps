@@ -57,7 +57,6 @@ $WinGet = @(
 )
 
 # manual install
-#Office (massgrave.dev)
 #filezilla
 #adobe p
 #solidworks
