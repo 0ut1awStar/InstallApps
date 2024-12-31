@@ -94,7 +94,6 @@ function Activate-Windows {
     & ([ScriptBlock]::Create((irm https://get.activated.win))) /HWID
 }
 
-
 function Install-Office {
     Write-Host "Installing Office" -ForegroundColor Yellow
 
