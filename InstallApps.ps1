@@ -85,15 +85,13 @@ function Install-WinGet {
 }
     
 function Install-WinGetApp {
-    param (
-        [string]$PackageID
-    )
+    param ([string]$PackageID)
     Write-Host "Installing $PackageID" -ForegroundColor Yellow
     winget install --id "$PackageID" --silent --accept-source-agreements --accept-package-agreements --source winget
 }
 
 function Activate-Windows {
-        Write-Host "Activating Windows" -ForegroundColor Yellow
+    Write-Host "Activating Windows" -ForegroundColor Yellow
     & ([ScriptBlock]::Create((irm https://get.activated.win))) /HWID
 }
 
@@ -101,29 +99,22 @@ function Activate-Windows {
 function Install-Office {
     Write-Host "Installing Office" -ForegroundColor Yellow
 
-    # download url
+    # static download url
     $DownloadUrl = "https://c2rsetup.officeapps.live.com/c2r/download.aspx?ProductreleaseID=O365ProPlusRetail&platform=x64&language=en-us&version=O16GA"
 
     # path where the file will be saved
     $DestinationPath = "$env:TEMP\officesetup.exe"
 
     # Download the file
-    Write-Host "Downloading Office setup from $DownloadUrl..." -ForegroundColor Yellow
     Invoke-WebRequest -Uri $DownloadUrl -OutFile $DestinationPath
 
     # Check if the file was downloaded successfully
     if (Test-Path $DestinationPath) {
-        Write-Host "Download completed successfully. File saved to $DestinationPath." -ForegroundColor Green
-        
         # Run the installer
-        Write-Host "Starting the Office setup installation..." -ForegroundColor Yellow
-        Start-Process -FilePath $DestinationPath -ArgumentList "/configure" -Wait -NoNewWindow
+        Start-Process -FilePath $DestinationPath -Wait -NoNewWindow
         
-        Write-Host "Office setup installation completed." -ForegroundColor Green
-
-        Write-Host "Activating"
+        Write-Host "Activating Office" -ForegroundColor
         & ([ScriptBlock]::Create((irm https://get.activated.win))) /Ohook
-
     } 
     else {
         Write-Host "Download failed. Please check the URL and try again." -ForegroundColor Red
@@ -146,3 +137,5 @@ foreach ($app in $WinGet) {
 
 # Install and Activate Office
 Install-Office
+
+Write-Host "Thank you! Come again!" -ForegroundColor Green
