@@ -2,7 +2,7 @@
 # irm https://raw.githubusercontent.com/0ut1awStar/InstallApps/refs/heads/main/InstallApps.ps1 | iex
 
 # Requires administrative provileges to run unattended. When running WinGet without administrator privileges, 
-# some applications may require elevation to install.When the installer runs, Windows will prompt you to elevate. 
+# some applications may require elevation to install. When the installer runs, Windows will prompt you to elevate. 
 # If you choose not to elevate, the application will fail to install.
 
 # application list (https://winget.run/)
@@ -13,10 +13,6 @@ $WinGet = @(
     "TGRMNSoftware.BulkRenameUtility",
     "Brave.Brave",
     "Google.Chrome",
-    "Corsair.iCUE.4", # hardware specific
-    "Jabra.Direct", # hardware specific
-    "SteelSeries.GG", # hardware specific
-    "Logitech.GHUB", # hardware specific
     "EaseUS.PartitionMaster",
     "Mozilla.Firefox.ESR",
     "BlenderFoundation.Blender",
@@ -45,7 +41,6 @@ $WinGet = @(
     "Mobatek.MobaXterm",
     "MusicBrainz.Picard",
     "Nvidia.Broadcast",
-    "Nvidia.GeForceExperience",
     "OBSProject.OBSStudio",
     "Ocenaudio.Ocenaudio",
     "OpenMPT.OpenMPT",
@@ -53,19 +48,26 @@ $WinGet = @(
     "Plex.Plexamp",
     "UnifiedIntents.UnifiedRemote",
     "yt-dlp.yt-dlp",
-    "Gyan.FFmpeg"
+    "Gyan.FFmpeg",
+    "Corsair.iCUE.4",          # hardware specific
+    "Jabra.Direct",            # hardware specific
+    "SteelSeries.GG",          # hardware specific
+    "Logitech.GHUB",           # hardware specific
+    "Nvidia.GeForceExperience" # hardware specific
 )
 
 # manual install
-#filezilla
-#adobe p
-#solidworks
-#brother
-#powerchute
-#lychee
-#S3D
-#questlink
-#syncthing
+<#
+syncthing
+filezilla
+adobe p
+solidworks
+brother
+powerchute
+lychee
+S3D
+questlink
+#>
 
 
 function CheckAdminPrivileges {
@@ -85,6 +87,7 @@ function Install-WinGet {
     
 function Install-WinGetApp {
     param ([string]$PackageID)
+
     Write-Host "Installing $PackageID" -ForegroundColor Yellow
     winget install --id "$PackageID" --silent --accept-source-agreements --accept-package-agreements --source winget
 }
@@ -106,7 +109,7 @@ function Install-Office {
         # Run the installer
         Start-Process -FilePath $DestinationPath -Wait -NoNewWindow
         
-        Write-Host "Activating Office" -ForegroundColor
+        Write-Host "Activating Office" -ForegroundColor Yellow
         & ([ScriptBlock]::Create((irm https://get.activated.win))) /Ohook
     } 
     else {
@@ -132,9 +135,21 @@ CheckAdminPrivileges
 # Install WinGet
 Install-winGet
 
+# make note of pre installation icons
+$preDesktop = [Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('CommonDesktop') | Get-ChildItem -Filter '*.lnk'
+
 # Install WinGet Apps
 foreach ($app in $WinGet) {
     Install-WinGetApp -PackageID "$app"
+}
+
+# make note of post installation icons
+$postDesktop = [Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('CommonDesktop') | Get-ChildItem -Filter '*.lnk'    
+
+# Cleaning up new unwhanted desktop icons
+Write-Host "Cleaning up WinGet created desktop icons..."
+$postDesktop | Where-Object FullName -notin $preDesktop.FullName | Foreach-Object {
+    Remove-Item -LiteralPath $_.FullName
 }
 
 # Install and activate Office
