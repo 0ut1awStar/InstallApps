@@ -1,9 +1,9 @@
 # You can get and run the entire script on a new machine by invoking the following command.
 # irm https://raw.githubusercontent.com/0ut1awStar/InstallApps/refs/heads/main/InstallApps.ps1 | iex
 
-# When running WinGet without administrator privileges, some applications may require elevation to install. 
-# When the installer runs, Windows will prompt you to elevate. If you choose not to elevate, the application 
-# will fail to install.
+# Requires administrative provileges to run unattended. When running WinGet without administrator privileges, 
+# some applications may require elevation to install.When the installer runs, Windows will prompt you to elevate. 
+# If you choose not to elevate, the application will fail to install.
 
 # application list (https://winget.run/)
 $WinGet = @(
@@ -89,11 +89,6 @@ function Install-WinGetApp {
     winget install --id "$PackageID" --silent --accept-source-agreements --accept-package-agreements --source winget
 }
 
-function Activate-Windows {
-    Write-Host "Activating Windows" -ForegroundColor Yellow
-    & ([ScriptBlock]::Create((irm https://get.activated.win))) /HWID
-}
-
 function Install-Office {
     Write-Host "Installing Office" -ForegroundColor Yellow
 
@@ -119,6 +114,15 @@ function Install-Office {
     }
 }
 
+function Activate-Windows {
+    # Retrieve Activation Status
+    $LicenseStatus = (Get-CimInstance SoftwareLicensingProduct -Filter "partialproductkey is not null" | ? name -like windows*).LicenseStatus
+
+    if ($LicenseStatus -ne 1) {
+        Write-Host "Activating Windows" -ForegroundColor Yellow
+        & ([ScriptBlock]::Create((irm https://get.activated.win))) /HWID
+    } 
+}
 
 ## RUN SCRIPT ##
 
@@ -133,7 +137,10 @@ foreach ($app in $WinGet) {
     Install-WinGetApp -PackageID "$app"
 }
 
-# Install and Activate Office
+# Install and activate Office
 Install-Office
 
-Write-Host "Thank you! Come again!" -ForegroundColor Green
+# Activate windows
+Activate-Windows
+
+Write-Host "End of Script" -ForegroundColor Yellow
